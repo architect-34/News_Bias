@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>India Media Pulse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-0:        #050505;
+      --bg-1:        #0c0c0d;
+      --bg-2:        #131316;
+      --border:      #1f1f23;
+      --border-hi:   #2a2a30;
+      --text-1:      #f5f5f5;
+      --text-2:      #a1a1aa;
+      --text-3:      #71717a;
+      --green:       #22c55e;
+      --green-soft:  #16a34a;
+      --green-glow:  rgba(34,197,94,.18);
+      --red:         #ef4444;
+      --amber:       #f59e0b;
+    }
+    html, body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background:  var(--bg-0);
+      color:       var(--text-1);
+      -webkit-font-smoothing: antialiased;
+      letter-spacing: -0.005em;
+    }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+    /* Layout primitives */
+    .card {
+      background: var(--bg-1);
+      border:     1px solid var(--border);
+      transition: border-color .2s ease, transform .2s ease, box-shadow .25s ease;
+    }
+    .card:hover {
+      border-color: var(--border-hi);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -8px var(--green-glow);
+    }
+    .pill {
+      background: var(--bg-2);
+      border:     1px solid var(--border);
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .pill:hover { border-color: var(--green-soft); color: var(--green); }
+    .pill.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #050505;
+      font-weight: 600;
+    }
+
+    /* Bias gradient — RED → ZINC → GREEN */
+    .bias-track {
+      background: linear-gradient(to right, #ef4444 0%, #3f3f46 50%, #22c55e 100%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+    }
+    .bias-marker {
+      transition: left .6s cubic-bezier(.2,.8,.2,1);
+      box-shadow: 0 0 0 2px var(--bg-1), 0 0 12px var(--green-glow);
+    }
+
+    /* Mini bars */
+    .mini-bar-track {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .mini-bar-fill {
+      height: 100%;
+      transition: width .5s cubic-bezier(.2,.8,.2,1);
+    }
+
+    /* Horizontal scroll */
+    .hscroll { scroll-snap-type: x mandatory; scroll-behavior: smooth; }
+    .hscroll > * { scroll-snap-align: start; }
+    .hscroll::-webkit-scrollbar { height: 6px; }
+    .hscroll::-webkit-scrollbar-track { background: transparent; }
+    .hscroll::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 6px; }
+    .hscroll::-webkit-scrollbar-thumb:hover { background: var(--green-soft); }
+
+    /* Animations */
+    .fade-in       { animation: fadeIn .35s ease-out both; }
+    .stagger > * { animation: fadeIn .4s ease-out both; opacity: 0; }
+    .stagger > *:nth-child(1) { animation-delay: .02s }
+    .stagger > *:nth-child(2) { animation-delay: .06s }
+    .stagger > *:nth-child(3) { animation-delay: .10s }
+    .stagger > *:nth-child(4) { animation-delay: .14s }
+    .stagger > *:nth-child(5) { animation-delay: .18s }
+    .stagger > *:nth-child(n+6) { animation-delay: .22s }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+
+    .spin    { animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg) } }
+
+    .pulse-dot { animation: pulseDot 2.2s ease-in-out infinite; }
+    @keyframes pulseDot { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+
+    .glow-border {
+      position: relative;
+    }
+    .glow-border::before {
+      content: ""; position: absolute; inset: -1px; border-radius: inherit;
+      padding: 1px; background: linear-gradient(135deg, transparent 30%, var(--green) 80%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      opacity: 0; transition: opacity .2s;
+      pointer-events: none;
+    }
+    .card:hover .glow-border::before { opacity: 1 }
+
+    /* Header underlines */
+    .accent-line {
+      background: linear-gradient(90deg, transparent, var(--green-soft), transparent);
+      height: 1px;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: var(--green);
+      color: #050505;
+      border: 1px solid var(--green);
+      transition: background .15s, transform .12s;
+    }
+    .btn-primary:hover  { background: #16a34a; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text-2);
+      border: 1px solid var(--border-hi);
+      transition: border-color .15s, color .15s;
+    }
+    .btn-outline:hover  { border-color: var(--green-soft); color: var(--green); }
+
+    /* Misc */
+    a { color: inherit; }
+    ::selection { background: var(--green); color: #050505; }
+
+    /* ──────────────────────────────────────────────────────────────
+       INTERACTIVE LAYER
+       ────────────────────────────────────────────────────────────── */
+
+    /* Scroll progress bar — sits above everything */
+    #scrollProgress {
+      position: fixed; top: 0; left: 0;
+      height: 2px; width: 0%;
+      background: linear-gradient(90deg, var(--green-soft), var(--green));
+      box-shadow: 0 0 10px var(--green-glow);
+      z-index: 100;
+      transition: width .08s linear;
+    }
+
+    /* Background dot-grid for depth without distraction */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,.025) 1px, transparent 0);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body > * { position: relative; z-index: 1; }
+
+    /* Shrinking sticky header */
+    header { transition: padding .25s ease, backdrop-filter .25s; }
+    header.compact .brand-sub {
+      opacity: 0; max-height: 0; overflow: hidden; margin: 0;
+      transition: opacity .2s, max-height .25s;
+    }
+    .brand-sub {
+      max-height: 20px;
+      transition: opacity .2s, max-height .25s;
+    }
+
+    /* Cursor spotlight on cards (CSS variables driven by JS mousemove) */
+    .card { will-change: transform; transform-style: preserve-3d; }
+    .card::after {
+      content: '';
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        420px circle at var(--mx, 50%) var(--my, 50%),
+        rgba(34, 197, 94, .10),
+        transparent 45%
+      );
+      opacity: 0;
+      transition: opacity .25s;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .card:hover::after { opacity: 1; }
+    .card > * { position: relative; z-index: 1; }
+    .card:hover .bias-marker {
+      box-shadow: 0 0 0 2px var(--bg-1), 0 0 14px var(--green);
+    }
+
+    /* Reveal on scroll */
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity .6s cubic-bezier(.22,.61,.36,1),
+                  transform .6s cubic-bezier(.22,.61,.36,1);
+    }
+    .reveal.revealed { opacity: 1; transform: none; }
+
+    /* Section headings with a growing accent underline */
+    .section-h {
+      position: relative;
+      display: inline-block;
+      padding-bottom: 6px;
+    }
+    .section-h::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0;
+      width: 0; height: 2px; border-radius: 1px;
+      background: var(--green);
+      transition: width .7s cubic-bezier(.22,.61,.36,1);
+    }
+    .section-h.revealed::after { width: 38px; }
+
+    /* Shimmer sweep on mini-bar fills */
+    .mini-bar-fill { position: relative; overflow: hidden; }
+    .mini-bar-fill::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 3.2s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0% { transform: translateX(-100%) } 50%, 100% { transform: translateX(100%) } }
+
+    /* Horizontal-scroll arrow buttons */
+    .hscroll-wrap { position: relative; }
+    .hscroll-btn {
+      position: absolute; top: 50%;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(12,12,13,.92);
+      border: 1px solid var(--border-hi);
+      color: var(--text-1);
+      display: grid; place-items: center;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(-50%) scale(.85);
+      transition: opacity .2s, transform .2s, background .15s, border-color .15s, color .15s;
+      z-index: 5;
+      backdrop-filter: blur(8px);
+    }
+    .hscroll-btn:hover {
+      background: var(--green); border-color: var(--green); color: #050505;
+    }
+    .hscroll-btn:active { transform: translateY(-50%) scale(.92); }
+    .hscroll-btn.left  { left: -8px; }
+    .hscroll-btn.right { right: -8px; }
+    .hscroll-wrap:hover .hscroll-btn {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+
+    /* Pill spring on hover */
+    .pill { transform: translateY(0); }
+    .pill:hover:not(.active) { transform: translateY(-1px); }
+
+    /* Refined animated underline for the headline link */
+    .link-hover {
+      background-image: linear-gradient(var(--green), var(--green));
+      background-size: 0% 1px;
+      background-repeat: no-repeat;
+      background-position: 0 100%;
+      transition: background-size .35s cubic-bezier(.22,.61,.36,1), color .2s;
+    }
+    .link-hover:hover { background-size: 100% 1px; color: var(--green); text-decoration: none; }
+
+    /* Modal entry */
+    #methodologyModal { animation: modalFade .2s ease-out; }
+    @keyframes modalFade { from { opacity: 0 } to { opacity: 1 } }
+    #methodologyModal > div { animation: modalSlide .3s cubic-bezier(.2,.8,.2,1); }
+    @keyframes modalSlide {
+      from { opacity: 0; transform: translateY(16px) scale(.97) }
+      to   { opacity: 1; transform: none }
+    }
+
+    /* Lucide icon micro-bounce on hover */
+    button:hover [data-lucide],
+    .pill:hover [data-lucide] { transform: scale(1.08); }
+    [data-lucide] { transition: transform .15s; }
+
+    /* Publisher logo pop on hover */
+    .pub-logo { transition: transform .2s, box-shadow .2s; }
+    .card:hover .pub-logo { transform: scale(1.06); box-shadow: 0 0 14px var(--green-glow); }
+
+    /* Smooth filter morph for state grid */
+    #stateGrid > * { will-change: transform, opacity; }
+
+    /* Respect prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<header class="sticky top-0 z-30 backdrop-blur" style="background: rgba(5,5,5,.78); border-bottom: 1px solid var(--border);">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg grid place-items-center" style="background:var(--green); color:#050505;">
+        <i data-lucide="radio-tower" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-semibold tracking-tight">India Media Pulse</h1>
+        <p class="text-xs" style="color:var(--text-3)">Political news, weighed against the press that prints it.</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="refreshBtn" class="btn-outline inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md">
+        <i data-lucide="refresh-cw" id="refreshIcon" class="w-4 h-4"></i> Refresh
+      </button>
+      <button id="methodologyBtn" class="btn-primary inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md font-medium">
+        <i data-lucide="info" class="w-4 h-4"></i> Methodology
+      </button>
+    </div>
+  </div>
+  <div class="accent-line"></div>
+</header>
+
+<!-- Demo-mode banner -->
+<div id="demoBanner" class="hidden" style="background: rgba(245,158,11,.08); border-bottom: 1px solid rgba(245,158,11,.25);">
+  <div class="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-3 text-sm" style="color:#fbbf24;">
+    <i data-lucide="wifi-off" class="w-4 h-4 shrink-0"></i>
+    <span><b>Demo mode</b> — backend not reachable. Showing sample articles. Run
+      <code class="mono px-1 rounded" style="background:rgba(245,158,11,.15)">uvicorn backend.main:app --reload</code>
+      inside <code class="mono px-1 rounded" style="background:rgba(245,158,11,.15)">india-media-pulse/</code>, then click
+      <b>Refresh</b>.</span>
+  </div>
+</div>
+
+<main class="max-w-7xl mx-auto px-6 py-10 space-y-12">
+
+  <!-- Publisher Profile Bar -->
+  <section>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-[11px] font-semibold uppercase tracking-[0.18em]" style="color:var(--text-3)">Publishers tracked</h2>
+      <span id="lastUpdated" class="text-xs flex items-center gap-1.5" style="color:var(--text-3)">
+        <span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background:var(--green)"></span>
+        <span id="lastUpdatedText">—</span>
+      </span>
+    </div>
+    <div id="publisherBar" class="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>
+  </section>
+
+  <!-- National News -->
+  <section>
+    <div class="flex items-end justify-between mb-4">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight">National headlines</h2>
+        <p class="text-sm mt-0.5" style="color:var(--text-3)">Horizontally scroll the latest from all five outlets.</p>
+      </div>
+      <span id="nationalCount" class="text-xs mono" style="color:var(--text-3)"></span>
+    </div>
+    <div id="nationalScroll" class="hscroll stagger flex gap-4 overflow-x-auto pb-4 -mx-2 px-2"></div>
+  </section>
+
+  <!-- State-wise News -->
+  <section>
+    <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+      <div>
+        <h2 class="text-xl font-semibold tracking-tight">State-wise feed</h2>
+        <p class="text-sm mt-0.5" style="color:var(--text-3)">Filter by state — cards inherit the publisher's bias profile.</p>
+      </div>
+      <div id="stateFilters" class="flex flex-wrap gap-1.5"></div>
+    </div>
+    <div id="stateGrid" class="stagger grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+  </section>
+
+  <p class="text-center text-xs pt-8" style="color:var(--text-3)">
+    Cached 1 hour per outlet · Scores are heuristic, not verdicts — see methodology.
+  </p>
+</main>
+
+<!-- Methodology Modal -->
+<div id="methodologyModal" class="hidden fixed inset-0 z-50 grid place-items-center p-4" style="background:rgba(0,0,0,.7); backdrop-filter:blur(4px);">
+  <div class="rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl card" style="background:var(--bg-1)">
+    <div class="flex items-center justify-between px-6 py-4 sticky top-0" style="background:var(--bg-1); border-bottom:1px solid var(--border)">
+      <h3 class="text-lg font-semibold tracking-tight">The Bias Engine</h3>
+      <button id="closeModal" class="p-1 rounded hover:bg-zinc-800">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="px-6 py-5 space-y-5 text-sm leading-relaxed" style="color:var(--text-2)">
+
+      <p>Every article is fetched in full, run through a transformer model, and scored across four lenses. Ownership carries the dominant weight (50%) because <i>who owns the press</i> is the most stable signal in this corpus.</p>
+
+      <div class="rounded-md p-3 text-xs mono" style="background:var(--bg-2); border:1px solid var(--border)">
+        WBI = 0.15·S &nbsp;+&nbsp; 0.20·L &nbsp;+&nbsp; 0.50·O &nbsp;+&nbsp; 0.15·P
+      </div>
+
+      <div class="space-y-3">
+        <p><b style="color:var(--text-1)">Full-body analysis.</b> Each URL is dereferenced with <code class="mono">trafilatura</code>, so scoring runs on the complete article — not just the headline. Cached for an hour.</p>
+        <p><b style="color:var(--text-1)">ML lexical &amp; stance.</b> Sentiment is scored by <code class="mono">DistilBERT-SST-2</code>; political stance by zero-shot <code class="mono">DeBERTa-v3-MNLI</code> against labels like <i>"praises the ruling party"</i>, <i>"criticises the opposition"</i>, <i>"highlights wrongdoing"</i>. ML scores override the lexicon when present; the lexicon stays as a fallback.</p>
+        <p><b style="color:var(--text-1)">S — Source weighting.</b> Quoted sources tagged as <i>Official</i>, <i>Independent</i>, <i>Affected</i>. Ratio ≥ 2:1 triggers <b>Access Journalism</b>.</p>
+        <p><b style="color:var(--text-1)">L — Lexical framing.</b> Either the ML sentiment (if available) or the lexicon score, sharpened for volatility.</p>
+        <p><b style="color:var(--text-1)">O — Ownership influence (dominant, always present).</b> Each outlet maps to its parent group's sector portfolio. Even on stories that don't touch those sectors, the publisher's historical prior contributes a baseline — so every article carries an ownership weighting.</p>
+        <p><b style="color:var(--text-1)">P — Partisan polarity.</b> Ruling vs opposition mention × sentiment polarity. Subject-modulates the lexical score: criticism of the opposition reads as pro-establishment.</p>
+      </div>
+
+      <div class="border-t pt-3" style="border-color:var(--border)">
+        <p class="font-semibold mb-2" style="color:var(--text-1)">Volatility</p>
+        <p class="text-xs">Scores are sharpened with <span class="mono">sign(x)·|x|^0.55</span> so mild signals become decisive. The publisher prior contributes only 15% — the engine's own signal dominates.</p>
+      </div>
+
+      <div class="border-t pt-3" style="border-color:var(--border)">
+        <p class="font-semibold mb-2" style="color:var(--text-1)">Bias Patterns</p>
+        <ul class="space-y-1.5 text-xs">
+          <li><span class="px-1.5 py-0.5 rounded text-[10px] font-semibold mr-1.5" style="background:rgba(239,68,68,.15); color:#fca5a5">Communal Bias</span> Nationalist labels (<i>Urban Naxal</i>, <i>Anti-National</i>) or caste signals fire.</li>
+          <li><span class="px-1.5 py-0.5 rounded text-[10px] font-semibold mr-1.5" style="background:rgba(245,158,11,.15); color:#fbbf24">Developmental Bias</span> Ownership / sector match in infra-mining-energy, or critical keywords missing.</li>
+          <li><span class="px-1.5 py-0.5 rounded text-[10px] font-semibold mr-1.5" style="background:rgba(168,85,247,.15); color:#c084fc">Access Journalism</span> Official-to-Independent source ratio ≥ 2:1.</li>
+          <li><span class="px-1.5 py-0.5 rounded text-[10px] font-semibold mr-1.5" style="background:rgba(34,197,94,.15); color:#86efac">Linguistic Elitism</span> Loaded vocabulary or a flagged headline-body gap.</li>
+        </ul>
+      </div>
+
+      <p class="text-xs italic border-t pt-3" style="border-color:var(--border); color:var(--text-3)">
+        Every lexicon, lookup table, and weight in this engine is editable. The output is a profile to argue with, not a verdict to defer to.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+const API_BASE = (location.protocol === "file:" || location.hostname === "")
+  ? "http://localhost:8000"
+  : "";
+
+// ---------------------------------------------------------------------------
+// Demo data — shown when the FastAPI backend is not reachable.
+// ---------------------------------------------------------------------------
+const DEMO_DATA = {
+  publishers: [
+    { id:"ndtv",         name:"NDTV",              owner:"Adani Group / AMG Media Networks",         ownership_type:"Corporate conglomerate",     influence:"Corporate-heavy. Perceived shift toward pro-establishment leaning since the 2023 Adani acquisition.", bias_factor:0.30,  color_accent:"#22c55e", logo_initials:"NDTV" },
+    { id:"thehindu",     name:"The Hindu",          owner:"Kasturi & Sons Ltd.",                       ownership_type:"Independent / family-owned", influence:"Liberal / centre-left historical record. Strong editorial independence and long-form policy coverage.", bias_factor:-0.40, color_accent:"#ef4444", logo_initials:"TH"   },
+    { id:"republic",     name:"Republic TV",        owner:"ARG Outlier Media (Arnab Goswami)",         ownership_type:"Founder-promoter owned",     influence:"Strongly nationalist editorial line. Perceived pro-government / pro-BJP framing.", bias_factor:0.70,  color_accent:"#22c55e", logo_initials:"RTV"  },
+    { id:"toi",          name:"Times of India",     owner:"Bennett, Coleman & Co. (The Times Group)",  ownership_type:"Private conglomerate",       influence:"Centrist / pro-business. Largest English daily by circulation.", bias_factor:0.10,  color_accent:"#a1a1aa", logo_initials:"TOI"  },
+    { id:"indianexpress",name:"The Indian Express", owner:"The Indian Express Group (Goenka family)",  ownership_type:"Independent legacy",         influence:"Centrist with a strong investigative tradition. Known for accountability reporting across governments.", bias_factor:0.00,  color_accent:"#a1a1aa", logo_initials:"IE"   },
+  ],
+  counts: { ndtv:5, thehindu:5, republic:5, toi:5, indianexpress:5 },
+  national: [
+    { publisher_id:"ndtv", scope:"national",
+      title:"PM Modi hails landmark scheme as transformative push for India",
+      url:"#", snippet:"Officials said the historic project will boost rural connectivity. A ministry spokesperson called it a decisive masterstroke.",
+      parties:["BJP"], sentiment:0.55, weighted_bias:0.85, bias_label:"Right-leaning", bias_color:"#22C55E",
+      bias_profile:{ wbi:0.85, parent:"Adani Group / AMG Media", category:null, partisan_target:"ruling",
+        scores:{ source_bias:0.85, lexical_bias:0.78, ownership_conflict:0.00, partisan_polarity:0.65 },
+        patterns:["Access Journalism","Linguistic Elitism"], omissions:[] } },
+
+    { publisher_id:"thehindu", scope:"national",
+      title:"Opposition slams Modi government over electoral bonds in scathing attack",
+      url:"#", snippet:"Congress critics decried the scheme as draconian. Academics and a former CEC said the design was ill-conceived and tone-deaf.",
+      parties:["INC","BJP"], sentiment:-0.55, weighted_bias:-0.72, bias_label:"Left-leaning", bias_color:"#EF4444",
+      bias_profile:{ wbi:-0.72, parent:"Kasturi & Sons Ltd.", category:null, partisan_target:"both",
+        scores:{ source_bias:-0.45, lexical_bias:-0.85, ownership_conflict:0.00, partisan_polarity:-0.40 },
+        patterns:["Linguistic Elitism"], omissions:[] } },
+
+    { publisher_id:"republic", scope:"national",
+      title:"BJP's historic welfare schemes reach 12 crore in transformative push",
+      url:"#", snippet:"Government said record disbursals under PM Awas Yojana mark a watershed. PMO sources confirmed the unprecedented success; the ministry called it landmark.",
+      parties:["BJP"], sentiment:0.62, weighted_bias:0.92, bias_label:"Right-leaning", bias_color:"#22C55E",
+      bias_profile:{ wbi:0.92, parent:"ARG Outlier Media", category:null, partisan_target:"ruling",
+        scores:{ source_bias:0.95, lexical_bias:0.90, ownership_conflict:0.30, partisan_polarity:0.75 },
+        patterns:["Access Journalism","Linguistic Elitism"], omissions:[] } },
+
+    { publisher_id:"toi", scope:"national",
+      title:"RBI holds repo rate at 6.25%, signals cautious easing path ahead",
+      url:"#", snippet:"The monetary policy committee voted unanimously. An economist said growth forecasts were revised upward to 7.1% while a market analyst noted improving liquidity.",
+      parties:[], sentiment:0.10, weighted_bias:0.08, bias_label:"Neutral / Centrist", bias_color:"#71717A",
+      bias_profile:{ wbi:0.07, parent:"Bennett, Coleman & Co. (Times Group)", category:null, partisan_target:"none",
+        scores:{ source_bias:0.05, lexical_bias:0.10, ownership_conflict:0.00, partisan_polarity:0.00 },
+        patterns:[], omissions:[] } },
+
+    { publisher_id:"indianexpress", scope:"national",
+      title:"Kejriwal cornered as AAP faces flak in Delhi liquor case",
+      url:"#", snippet:"The AAP supremo's silence was deafening, opposition said. ED officials confirmed fresh summons in the alleged scandal.",
+      parties:["AAP"], sentiment:-0.40, weighted_bias:0.78, bias_label:"Right-leaning", bias_color:"#22C55E",
+      bias_profile:{ wbi:0.78, parent:"The Indian Express Group", category:null, partisan_target:"opposition",
+        scores:{ source_bias:0.40, lexical_bias:-0.70, ownership_conflict:0.00, partisan_polarity:0.60 },
+        patterns:["Linguistic Elitism"], omissions:[] } },
+
+    { publisher_id:"ndtv", scope:"national",
+      title:"Adani Group's coal-to-renewables pivot reshapes India's energy transition",
+      url:"#", snippet:"The conglomerate's bold renewables push, alongside coal block acquisitions and new ports infrastructure, was described by analysts as transformative for the sector.",
+      parties:[], sentiment:0.50, weighted_bias:0.93, bias_label:"Right-leaning", bias_color:"#22C55E",
+      bias_profile:{ wbi:0.93, parent:"Adani Group / AMG Media", category:"Mining & Energy", partisan_target:"none",
+        scores:{ source_bias:0.30, lexical_bias:0.65, ownership_conflict:0.95, partisan_polarity:0.00 },
+        patterns:["Developmental Bias","Linguistic Elitism"],
+        omissions:["Adivasi","displacement","forest clearance","gram sabha","rehabilitation"] } },
+
+    { publisher_id:"thehindu", scope:"national",
+      title:"Sambhal demolitions: HC seeks report as Dalit families allege bulldozer raj",
+      url:"#", snippet:"Residents said homes were razed without notice; victims' families described being given minutes to leave. A rights group lawyer said due process was bypassed.",
+      parties:[], sentiment:-0.55, weighted_bias:-0.74, bias_label:"Left-leaning", bias_color:"#EF4444",
+      bias_profile:{ wbi:-0.74, parent:"Kasturi & Sons Ltd.", category:"Communal incident", partisan_target:"none",
+        scores:{ source_bias:-0.55, lexical_bias:-0.45, ownership_conflict:0.00, partisan_polarity:0.00 },
+        patterns:["Communal Bias"], omissions:["FIR","post-mortem","named accused"] } },
+
+    { publisher_id:"republic", scope:"national",
+      title:"Urban Naxal network busted: Anti-National elements exposed in sting",
+      url:"#", snippet:"Police said the Maoist-linked group was foreign-funded. Officials confirmed the so-called Andolanjeevi activists allegedly received ISI-backed support.",
+      parties:["INC"], sentiment:-0.40, weighted_bias:0.65, bias_label:"Right-leaning", bias_color:"#22C55E",
+      bias_profile:{ wbi:0.65, parent:"ARG Outlier Media", category:null, partisan_target:"opposition",
+        scores:{ source_bias:0.85, lexical_bias:-0.55, ownership_conflict:0.10, partisan_polarity:0.50 },
+        patterns:["Communal Bias","Access Journalism","Linguistic Elitism"], omissions:[] } },
+
+    { publisher_id:"toi", scope:"national",
+      title:"Mumbai real estate surges 28% as private treaties power new towers",
+      url:"#", snippet:"Developers said launches in Lower Parel and BKC drove the surge. A market analyst cited record private treaty deals between listed firms and the Times Group's marketing arm.",
+      parties:[], sentiment:0.45, weighted_bias:0.60, bias_label:"Right-leaning", bias_color:"#22C55E",
+      bias_profile:{ wbi:0.60, parent:"Bennett, Coleman & Co. (Times Group)", category:null, partisan_target:"none",
+        scores:{ source_bias:0.20, lexical_bias:0.45, ownership_conflict:0.85, partisan_polarity:0.00 },
+        patterns:["Developmental Bias"], omissions:[] } },
+
+    { publisher_id:"indianexpress", scope:"national",
+      title:"RTI reveals 68% of PM Gati Shakti projects behind schedule",
+      url:"#", snippet:"Documents obtained under the RTI Act show land acquisition bottlenecks. An expert on infrastructure policy and an activist said displacement compensation remained unpaid.",
+      parties:["BJP"], sentiment:-0.30, weighted_bias:-0.35, bias_label:"Left-leaning", bias_color:"#EF4444",
+      bias_profile:{ wbi:-0.35, parent:"The Indian Express Group", category:"Infrastructure", partisan_target:"ruling",
+        scores:{ source_bias:-0.30, lexical_bias:-0.20, ownership_conflict:0.00, partisan_polarity:-0.40 },
+        patterns:[], omissions:["Adivasi","environmental clearance","forest rights","gram sabha"] } },
+  ],
+  by_state: {
+    "Maharashtra": [
+      { publisher_id:"toi", scope:"state", state:"Maharashtra",
+        title:"Mumbai coastal road project 70% complete, set to open by Diwali",
+        url:"#", snippet:"BMC officials confirmed the deadline. A spokesperson called the landmark project transformative for the city.",
+        parties:[], sentiment:0.40, weighted_bias:0.55, bias_label:"Right-leaning", bias_color:"#22C55E",
+        bias_profile:{ wbi:0.55, parent:"Bennett, Coleman & Co. (Times Group)", category:"Infrastructure", partisan_target:"none",
+          scores:{ source_bias:0.85, lexical_bias:0.60, ownership_conflict:0.30, partisan_polarity:0.00 },
+          patterns:["Access Journalism","Linguistic Elitism"],
+          omissions:["Adivasi","displacement","environmental clearance","gram sabha"] } },
+      { publisher_id:"indianexpress", scope:"state", state:"Maharashtra",
+        title:"Maha Vikas Aghadi slams OBC quota rollback as anti-people",
+        url:"#", snippet:"Opposition leaders gathered in Nagpur. A constitutional lawyer and two academics said the rollback bypassed the SC's Indira Sawhney framework.",
+        parties:["INC","NCP"], sentiment:-0.40, weighted_bias:-0.45, bias_label:"Left-leaning", bias_color:"#EF4444",
+        bias_profile:{ wbi:-0.45, parent:"The Indian Express Group", category:null, partisan_target:"opposition",
+          scores:{ source_bias:-0.45, lexical_bias:-0.70, ownership_conflict:0.00, partisan_polarity:0.40 },
+          patterns:["Communal Bias","Linguistic Elitism"], omissions:[] } },
+    ],
+    "Delhi": [
+      { publisher_id:"thehindu", scope:"state", state:"Delhi",
+        title:"AAP raises concerns over irregularities in Delhi poll results",
+        url:"#", snippet:"The party submitted 400 affidavits. An election researcher and a poll-data analyst said booth-agent records and VVPAT counts diverged in 11 constituencies.",
+        parties:["AAP","BJP"], sentiment:-0.35, weighted_bias:-0.50, bias_label:"Left-leaning", bias_color:"#EF4444",
+        bias_profile:{ wbi:-0.50, parent:"Kasturi & Sons Ltd.", category:null, partisan_target:"both",
+          scores:{ source_bias:-0.55, lexical_bias:-0.35, ownership_conflict:0.00, partisan_polarity:-0.18 },
+          patterns:[], omissions:[] } },
+      { publisher_id:"republic", scope:"state", state:"Delhi",
+        title:"LG exposes AAP-era school renovation scandal in landmark audit",
+        url:"#", snippet:"Officials said the so-called school upgrade was riddled with kickbacks. Police said FIRs would follow; the spokesperson called the alleged ₹192 crore scam a watershed.",
+        parties:["AAP"], sentiment:-0.45, weighted_bias:0.78, bias_label:"Right-leaning", bias_color:"#22C55E",
+        bias_profile:{ wbi:0.78, parent:"ARG Outlier Media", category:null, partisan_target:"opposition",
+          scores:{ source_bias:0.90, lexical_bias:-0.65, ownership_conflict:0.00, partisan_polarity:0.55 },
+          patterns:["Access Journalism","Linguistic Elitism"], omissions:[] } },
+    ],
+    "Uttar Pradesh": [
+      { publisher_id:"ndtv", scope:"state", state:"Uttar Pradesh",
+        title:"Yogi government delivers 1 lakh jobs in decisive recruitment push",
+        url:"#", snippet:"The state cabinet cleared recruitment calendars. Officials said the police, primary teachers and health department posts would be filled by year-end.",
+        parties:["BJP"], sentiment:0.50, weighted_bias:0.85, bias_label:"Right-leaning", bias_color:"#22C55E",
+        bias_profile:{ wbi:0.85, parent:"Adani Group / AMG Media", category:null, partisan_target:"ruling",
+          scores:{ source_bias:0.85, lexical_bias:0.70, ownership_conflict:0.00, partisan_polarity:0.60 },
+          patterns:["Access Journalism","Linguistic Elitism"], omissions:[] } },
+      { publisher_id:"thehindu", scope:"state", state:"Uttar Pradesh",
+        title:"Sambhal bulldozer raj: HC questions district admin as Dalit homes razed",
+        url:"#", snippet:"A bench took suo motu cognisance. Residents and a rights group lawyer said homes belonging to Scheduled Caste families were razed without notice.",
+        parties:[], sentiment:-0.50, weighted_bias:-0.78, bias_label:"Left-leaning", bias_color:"#EF4444",
+        bias_profile:{ wbi:-0.78, parent:"Kasturi & Sons Ltd.", category:"Communal incident", partisan_target:"none",
+          scores:{ source_bias:-0.55, lexical_bias:-0.45, ownership_conflict:0.00, partisan_polarity:0.00 },
+          patterns:["Communal Bias"], omissions:["FIR","post-mortem","named accused"] } },
+    ],
+    "Karnataka": [
+      { publisher_id:"indianexpress", scope:"state", state:"Karnataka",
+        title:"Karnataka CM defends Mekedatu project, seeks Centre's clearance",
+        url:"#", snippet:"Chief Minister Siddaramaiah reiterated the project's necessity. A water policy researcher and a former irrigation secretary said the project's environmental clearance was pending.",
+        parties:["INC"], sentiment:0.15, weighted_bias:-0.20, bias_label:"Left-leaning", bias_color:"#EF4444",
+        bias_profile:{ wbi:-0.20, parent:"The Indian Express Group", category:"Infrastructure", partisan_target:"opposition",
+          scores:{ source_bias:-0.10, lexical_bias:0.10, ownership_conflict:0.00, partisan_polarity:-0.15 },
+          patterns:[], omissions:["Adivasi","displacement","forest rights","gram sabha"] } },
+    ],
+    "West Bengal": [
+      { publisher_id:"republic", scope:"state", state:"West Bengal",
+        title:"Governor seeks CBI probe into post-poll violence by Anti-National elements",
+        url:"#", snippet:"The Raj Bhavan cited 47 complaints. Police said TMC workers allegedly attacked Hindu households; officials confirmed the appeasement politics had reached a watershed.",
+        parties:["TMC","BJP"], sentiment:-0.55, weighted_bias:0.82, bias_label:"Right-leaning", bias_color:"#22C55E",
+        bias_profile:{ wbi:0.82, parent:"ARG Outlier Media", category:null, partisan_target:"both",
+          scores:{ source_bias:0.85, lexical_bias:-0.30, ownership_conflict:0.00, partisan_polarity:0.40 },
+          patterns:["Communal Bias","Access Journalism","Linguistic Elitism"], omissions:[] } },
+    ],
+  }
+};
+
+let DATA = null;
+let activeState = "All";
+
+function showBackendBanner(show) { $("#demoBanner")?.classList.toggle("hidden", !show); }
+
+async function loadData(force=false) {
+  const url = API_BASE + (force ? "/api/articles?force=true" : "/api/articles");
+  const btn = $("#refreshBtn"); const icon = $("#refreshIcon");
+  btn.disabled = true; btn.style.opacity = .5; icon.classList.add("spin");
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    DATA = await res.json();
+    showBackendBanner(false);
+    render();
+    $("#lastUpdatedText").textContent = "Live · " + new Date().toLocaleTimeString();
+  } catch (e) {
+    DATA = DEMO_DATA;
+    showBackendBanner(true);
+    render();
+    $("#lastUpdatedText").textContent = "Demo mode · backend offline";
+  } finally {
+    btn.disabled = false; btn.style.opacity = 1; icon.classList.remove("spin");
+  }
+}
+
+function render() {
+  renderPublishers(DATA.publishers, DATA.counts);
+  renderNational(DATA.national);
+  renderStates(DATA.by_state);
+  lucide.createIcons();
+}
+
+function renderPublishers(pubs, counts) {
+  $("#publisherBar").innerHTML = pubs.map(p => `
+    <div class="card rounded-lg p-3.5 relative">
+      <span class="glow-border rounded-lg"></span>
+      <div class="flex items-center gap-2.5 mb-2">
+        <div class="w-9 h-9 rounded-md grid place-items-center text-[10px] font-bold"
+             style="background:${p.color_accent}; color:#050505">${p.logo_initials}</div>
+        <div class="min-w-0">
+          <div class="font-semibold text-sm truncate">${p.name}</div>
+          <div class="text-[11px] truncate" style="color:var(--text-3)">${p.ownership_type}</div>
+        </div>
+      </div>
+      <div class="text-[11px] mb-2 flex items-center gap-1" style="color:var(--text-2)">
+        <i data-lucide="building-2" class="w-3 h-3"></i>
+        <span class="truncate">${p.owner}</span>
+      </div>
+      <p class="text-[11px] leading-snug line-clamp-3" style="color:var(--text-3)">${p.influence}</p>
+      <div class="mt-2.5 flex items-center justify-between text-[10px] mono" style="color:var(--text-3)">
+        <span>Prior ${formatPrior(p.bias_factor)}</span>
+        <span>${counts[p.id] || 0} articles</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderNational(items) {
+  $("#nationalCount").textContent = `${items.length} headlines`;
+  if (!items.length) { $("#nationalScroll").innerHTML = emptyState("No national headlines available."); return; }
+  $("#nationalScroll").innerHTML = items.map(articleCard).join("");
+}
+
+function renderStates(byState) {
+  const states = ["All", ...Object.keys(byState)];
+  $("#stateFilters").innerHTML = states.map(s => `
+    <button data-state="${s}" class="state-pill pill text-xs px-3 py-1 rounded-full ${s===activeState?'active':''}">
+      ${s}${s !== "All" ? ` <span style="opacity:.7">(${byState[s].length})</span>` : ""}
+    </button>
+  `).join("");
+  $$(".state-pill").forEach(btn => btn.addEventListener("click", () => {
+    activeState = btn.dataset.state; renderStates(byState); lucide.createIcons();
+  }));
+  const items = activeState === "All" ? Object.values(byState).flat() : (byState[activeState] || []);
+  if (!items.length) { $("#stateGrid").innerHTML = emptyState("No state-tagged articles in this slice."); return; }
+  $("#stateGrid").innerHTML = items.map(articleCard).join("");
+}
+
+// Pattern chip colour palette tuned for dark theme.
+const PATTERN_STYLES = {
+  "Communal Bias":      { bg:"rgba(239,68,68,.15)",  fg:"#fca5a5", icon:"flame" },
+  "Developmental Bias": { bg:"rgba(245,158,11,.15)", fg:"#fbbf24", icon:"hard-hat" },
+  "Access Journalism":  { bg:"rgba(168,85,247,.15)", fg:"#c084fc", icon:"shield" },
+  "Linguistic Elitism": { bg:"rgba(34,197,94,.15)",  fg:"#86efac", icon:"quote" },
+};
+
+function patternChip(name) {
+  const s = PATTERN_STYLES[name] || { bg:"rgba(255,255,255,.05)", fg:"var(--text-2)", icon:"tag" };
+  return `<span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded font-semibold"
+            style="background:${s.bg}; color:${s.fg}">
+            <i data-lucide="${s.icon}" class="w-3 h-3"></i>${name}
+          </span>`;
+}
+
+function targetBadge(target) {
+  if (!target || target === "none") return "";
+  const map = {
+    ruling:     { label:"Ruling target",  bg:"rgba(34,197,94,.12)",  fg:"#86efac" },
+    opposition: { label:"Oppn. target",   bg:"rgba(239,68,68,.12)",  fg:"#fca5a5" },
+    both:       { label:"Partisan clash", bg:"rgba(168,85,247,.12)", fg:"#c084fc" },
+  };
+  const m = map[target];
+  if (!m) return "";
+  return `<span class="px-1.5 py-0.5 rounded text-[10px]" style="background:${m.bg}; color:${m.fg}">${m.label}</span>`;
+}
+
+function miniBar(value, label) {
+  const v = Math.max(-1, Math.min(1, value || 0));
+  const pct = Math.round(Math.abs(v) * 100);
+  const color = v > 0.05 ? "var(--green)" : v < -0.05 ? "var(--red)" : "var(--text-3)";
+  return `
+    <div>
+      <div class="flex items-center justify-between text-[10px]" style="color:var(--text-3)">
+        <span>${label}</span>
+        <span class="mono">${(v>=0?'+':'')+v.toFixed(2)}</span>
+      </div>
+      <div class="mini-bar-track h-1 rounded-full mt-0.5">
+        <div class="mini-bar-fill rounded-full" style="width:${pct}%; background:${color}"></div>
+      </div>
+    </div>
+  `;
+}
+
+function articleCard(a) {
+  const pub = DATA.publishers.find(p => p.id === a.publisher_id) || {};
+  const meterPos = ((a.weighted_bias ?? 0) + 1) / 2 * 100;
+  const parties = (a.parties || []).slice(0, 3);
+  const profile = a.bias_profile || null;
+  const patterns = (profile && profile.patterns) || [];
+  const scores = (profile && profile.scores) || {};
+  const omissions = (profile && profile.omissions) || [];
+  const category = profile && profile.category;
+  const parent = (profile && profile.parent) || pub.owner || '—';
+  const target = profile && profile.partisan_target;
+  const ml = profile && profile.ml;
+
+  return `
+    <article class="card snap-start min-w-[330px] max-w-[380px] rounded-lg p-4 flex flex-col gap-3 relative">
+      <span class="glow-border rounded-lg"></span>
+      <div class="flex items-center gap-2 text-[11px] flex-wrap" style="color:var(--text-3)">
+        <span class="inline-block w-2 h-2 rounded-full" style="background:${pub.color_accent || '#999'}"></span>
+        <span class="font-semibold" style="color:var(--text-1)">${pub.name || a.publisher_id}</span>
+        ${category ? `<span class="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider" style="background:var(--bg-2); color:var(--text-3); border:1px solid var(--border)">${category}</span>` : ''}
+        ${targetBadge(target)}
+        ${ml && ml.used ? `<span title="Transformer-analysed (${ml.body_chars} chars of body)" class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold" style="background:rgba(34,197,94,.12); color:var(--green); border:1px solid rgba(34,197,94,.3)"><i data-lucide="cpu" class="w-2.5 h-2.5"></i>ML</span>` : ''}
+        ${a.state ? `<span class="ml-auto px-1.5 py-0.5 rounded text-[10px]" style="background:var(--bg-2); color:var(--text-2); border:1px solid var(--border)">${a.state}</span>` : ''}
+      </div>
+      <div class="text-[10px] -mt-1" style="color:var(--text-3)">Owner: ${escapeHtml(parent)}</div>
+
+      <a href="${a.url}" target="_blank" rel="noopener" class="font-medium leading-snug link-hover" style="color:var(--text-1)">
+        ${escapeHtml(a.title)}
+      </a>
+
+      ${a.snippet ? `<p class="text-xs leading-relaxed line-clamp-2" style="color:var(--text-2)">${escapeHtml(a.snippet)}</p>` : ''}
+
+      ${patterns.length ? `
+        <div class="flex flex-wrap gap-1">
+          ${patterns.map(patternChip).join("")}
+        </div>
+      ` : `<div class="text-[10px] italic" style="color:var(--text-3)">No bias patterns detected</div>`}
+
+      <div class="grid grid-cols-4 gap-2">
+        ${miniBar(scores.source_bias,        "S")}
+        ${miniBar(scores.lexical_bias,       "L")}
+        ${miniBar(scores.ownership_conflict, "O")}
+        ${miniBar(scores.partisan_polarity,  "P")}
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between text-[10px] mb-1" style="color:var(--text-3)">
+          <span>Left</span>
+          <span class="font-semibold" style="color:${a.bias_color}">${a.bias_label}</span>
+          <span>Right</span>
+        </div>
+        <div class="relative h-2 rounded-full bias-track">
+          <div class="bias-marker absolute -top-1 w-1 h-4 rounded-sm" style="left:calc(${meterPos}% - 2px); background:var(--text-1)"></div>
+        </div>
+        <div class="flex items-center justify-between mt-1.5 text-[10px] mono" style="color:var(--text-3)">
+          <span>WBI ${fmt(profile && profile.wbi)}</span>
+          <span>weighted ${fmt(a.weighted_bias)}</span>
+        </div>
+      </div>
+
+      ${omissions.length ? `
+        <div class="pt-2" style="border-top:1px dashed var(--border)">
+          <div class="text-[10px] font-semibold flex items-center gap-1 mb-1" style="color:var(--amber)">
+            <i data-lucide="alert-octagon" class="w-3 h-3"></i>
+            Missing context (${omissions.length})
+          </div>
+          <div class="flex flex-wrap gap-1">
+            ${omissions.slice(0, 5).map(k => `<span class="text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(245,158,11,.10); color:#fcd34d; border:1px solid rgba(245,158,11,.25)">${escapeHtml(k)}</span>`).join("")}
+          </div>
+        </div>
+      ` : ""}
+
+      ${parties.length ? `
+        <div class="flex flex-wrap gap-1">
+          ${parties.map(p => `<span class="text-[10px] px-1.5 py-0.5 rounded" style="background:rgba(34,197,94,.08); color:#86efac; border:1px solid rgba(34,197,94,.2)">${p}</span>`).join("")}
+        </div>
+      ` : ""}
+    </article>
+  `;
+}
+
+function formatPrior(v) {
+  const sign = v >= 0 ? '+' : '';
+  const color = v <= -0.2 ? 'var(--red)' : v >= 0.2 ? 'var(--green)' : 'var(--text-2)';
+  return `<span style="color:${color}">${sign}${v.toFixed(2)}</span>`;
+}
+function fmt(v) { return (v ?? 0).toFixed(2); }
+function escapeHtml(s) { return (s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function emptyState(msg) {
+  return `<div class="w-full text-center text-sm py-10 rounded-lg" style="color:var(--text-3); border:1px dashed var(--border)">${msg}</div>`;
+}
+
+// Modal wiring
+$("#methodologyBtn").addEventListener("click", () => $("#methodologyModal").classList.remove("hidden"));
+$("#closeModal").addEventListener("click", () => $("#methodologyModal").classList.add("hidden"));
+$("#methodologyModal").addEventListener("click", (e) => {
+  if (e.target.id === "methodologyModal") $("#methodologyModal").classList.add("hidden");
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("#methodologyModal").classList.add("hidden");
+});
+
+$("#refreshBtn").addEventListener("click", () => loadData(true));
+
+lucide.createIcons();
+loadData(false);
+</script>
+</body>
+</html>
